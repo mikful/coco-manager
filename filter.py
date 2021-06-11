@@ -1,5 +1,7 @@
 import json
 from pathlib import Path
+import shutil
+import os
 
 class CocoFilter():
     """ Filters the COCO dataset
@@ -97,10 +99,27 @@ class CocoFilter():
         for image_id in self.new_image_ids:
             self.new_images.append(self.images[image_id])
 
+
+    def _save_new_image_folder(self):
+        count = 0
+
+        if not os.path.exists(self.output_image_dir):
+            os.makedirs(self.output_image_dir)
+
+        for image in self.new_images:
+            # print(image["file_name"])
+            count += 1
+            shutil.copyfile(self.input_json_path.parent/image["file_name"], 
+                            self.output_image_dir/image["file_name"])
+        print(f'{len(self.new_images)} copied files.')
+
+
+
     def main(self, args):
         # Open json
         self.input_json_path = Path(args.input_json)
         self.output_json_path = Path(args.output_json)
+        self.output_image_dir = Path(args.output_image_dir)
         self.filter_categories = args.categories
 
         # Verify input path exists
@@ -135,6 +154,9 @@ class CocoFilter():
         self._filter_annotations()
         self._filter_images()
 
+        # save images to new folder
+        self._save_new_image_folder()   
+
         # Build new JSON
         new_master_json = {
             'info': self.info,
@@ -164,6 +186,8 @@ if __name__ == "__main__":
         help="path to save the output json")
     parser.add_argument("-c", "--categories", nargs='+', dest="categories",
         help="List of category names separated by spaces, e.g. -c person dog bicycle")
+    parser.add_argument("-out_im", "--output_image_dir", dest="output_image_dir",
+        help="Directory of output images")
 
     args = parser.parse_args()
 
